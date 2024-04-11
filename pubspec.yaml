@@ -59,6 +59,7 @@ dependencies:
   google_sign_in: ^6.1.0
   intl_phone_number_input: ^0.7.2
   cached_network_image: ^3.2.3
+  mockito: ^5.4.4
 
 dev_dependencies:
   flutter_test:

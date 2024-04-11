@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:task_manger_app/domain/usecases/add_task/add_task_usecase.dart';
+import 'package:task_manger_app/domain/usecases/delete_task/delete_task_usecase.dart';
 import 'package:task_manger_app/domain/usecases/todo_list/get_todo_list_usecase.dart';
+import 'package:task_manger_app/domain/usecases/update_task/update_task_usecase.dart';
 import 'package:task_manger_app/domain/usecases/user_login/userlogin_usecase.dart';
 import 'package:task_manger_app/presentation/cubit/add_task/add_task_cubit.dart';
+import 'package:task_manger_app/presentation/cubit/delete_task/delete_task_cubit.dart';
 import 'package:task_manger_app/presentation/cubit/get_todo_list/get_todo_list_cubit.dart';
+import 'package:task_manger_app/presentation/cubit/update_task/update_task_cubit.dart';
 import 'package:task_manger_app/presentation/cubit/user_login/user_login_cubit.dart';
 import 'package:task_manger_app/presentation/screens/home_screen.dart';
 import 'package:task_manger_app/presentation/screens/signin_screen.dart';
@@ -105,6 +109,16 @@ class MyApp extends StatelessWidget {
       BlocProvider(
         create: (context) => AddTaskCubit(
           AddTaskUsecase(repository),
+        ),
+      ),
+      BlocProvider(
+        create: (context) => UpdateTaskCubit(
+          UpdateTaskUsecase(repository),
+        ),
+      ),
+      BlocProvider(
+        create: (context) => DeleteTaskCubit(
+          DeleteTaskUsecase(repository),
         ),
       ),
     ], child: HomeScreen());

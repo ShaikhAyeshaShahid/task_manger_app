@@ -16,7 +16,7 @@ class UpdateTodo {
     completed = json['completed'];
     userId = json['userId'];
   }
-  String? id;
+  int? id;
   String? todo;
   bool? completed;
   int? userId;

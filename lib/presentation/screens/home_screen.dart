@@ -3,14 +3,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:task_manger_app/constants/size_config.dart';
 import 'package:task_manger_app/domain/entities/AddTask.dart';
 import 'package:task_manger_app/presentation/cubit/add_task/add_task_cubit.dart';
+import 'package:task_manger_app/presentation/cubit/delete_task/delete_task_cubit.dart';
 import 'package:task_manger_app/presentation/cubit/get_todo_list/get_todo_list_cubit.dart';
-import 'package:task_manger_app/presentation/widgets/task_manager_app_button.dart';
+import 'package:task_manger_app/presentation/cubit/update_task/update_task_cubit.dart';
 import 'package:task_manger_app/presentation/widgets/task_manager_text_form_field.dart';
 
 import '../../constants/colors.dart';
 import '../../domain/entities/TaskManager.dart';
 import '../../domain/entities/TodoList.dart';
-import '../widgets/task_manager_item.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -22,6 +22,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   late GetTodoListCubit getTodoListCubit;
   late AddTaskCubit addTaskCubit;
+  late UpdateTaskCubit updateTaskCubit;
+  late DeleteTaskCubit deleteTaskCubit;
   List<TodoList> getTodoList = [];
 
   final AddTask addTask = AddTask();
@@ -32,12 +34,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
+  bool isEditable = true;
+
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
     getTodoListCubit = BlocProvider.of<GetTodoListCubit>(context);
     addTaskCubit = BlocProvider.of<AddTaskCubit>(context);
+    updateTaskCubit = BlocProvider.of<UpdateTaskCubit>(context);
+    deleteTaskCubit = BlocProvider.of<DeleteTaskCubit>(context);
     getTodoListCubit.loadTodoList();
     print("Todo list length ${getTodoList.length}");
     print("Todo list length ${todosList.length}");
@@ -85,49 +91,152 @@ class _HomeScreenState extends State<HomeScreen> {
                     BlocConsumer<GetTodoListCubit, GetTodoListState>(
                       builder: (context, state) {
                         if (state is GetTodoListLoading) {
-                          return Center(child: CircularProgressIndicator());
+                          return const Center(
+                              child: CircularProgressIndicator());
                         }
                         if (state is GetTodoListLoaded) {
-                          return Container(
+                          return SizedBox(
                             height: SizeConfig.height(context, 1),
                             width: SizeConfig.width(context, 1),
                             child: ListView.separated(
                               itemBuilder: (context, index) {
                                 return Container(
-                                    padding: EdgeInsets.all(16.0),
+                                    padding: const EdgeInsets.all(16.0),
                                     decoration: BoxDecoration(
                                       color: Colors.grey[200],
                                       borderRadius: BorderRadius.circular(10.0),
                                     ),
                                     child: Row(
                                       mainAxisAlignment:
-                                          MainAxisAlignment.start,
+                                          MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Icon(
-                                          Icons.task,
-                                          color: GlobalColors.primaryColor,
-                                          size: SizeConfig.width(context, 0.07),
+                                        SizedBox(
+                                            width:
+                                                SizeConfig.width(context, 0.55),
+                                            child: isEditable
+                                                ? TextFormField(
+                                                    decoration:
+                                                        const InputDecoration(
+                                                            border: InputBorder
+                                                                .none),
+                                                    initialValue:
+                                                        getTodoList[index].todo,
+                                                    keyboardType:
+                                                        TextInputType.text)
+                                                : Text(
+                                                    "${index + 1}: ${getTodoList[index].todo}",
+                                                    style: TextStyle(
+                                                        fontSize:
+                                                            SizeConfig.width(
+                                                                context, 0.04)),
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    maxLines: 3,
+                                                  )),
+                                        SizedBox(
+                                          width:
+                                              SizeConfig.width(context, 0.01),
+                                        ),
+                                        InkWell(
+                                          onTap: () {
+                                            setState(() {
+                                              isEditable =
+                                                  !isEditable; // Change here
+                                              print("isEditable $isEditable");
+                                            });
+                                            // updateTaskCubit.updateTask(false);
+                                            if (!isEditable) {
+                                              updateTaskCubit.updateTask(false);
+                                            }
+                                          },
+                                          child: BlocConsumer<UpdateTaskCubit,
+                                              UpdateTaskState>(
+                                            listener: (context, state) {
+                                              if (state is UpdateTaskFailed) {
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(SnackBar(
+                                                  content:
+                                                      Text(state.errorMessage),
+                                                ));
+                                              }
+                                              if (state is UpdateTaskSuccess) {
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(
+                                                        const SnackBar(
+                                                  content: Text(
+                                                      "Task edit successfully"),
+                                                ));
+                                              }
+                                            },
+                                            builder: (context, state) {
+                                              if (state is UpdateTaskLoading) {
+                                                return const Center(
+                                                  child:
+                                                      CircularProgressIndicator(),
+                                                );
+                                              }
+                                              return Icon(
+                                                Icons.edit,
+                                                color:
+                                                    GlobalColors.primaryColor,
+                                                size: SizeConfig.width(
+                                                    context, 0.07),
+                                              );
+                                            },
+                                          ),
                                         ),
                                         SizedBox(
                                           width:
-                                              SizeConfig.width(context, 0.02),
+                                              SizeConfig.width(context, 0.01),
                                         ),
-                                        Flexible(
-                                          child: Text(
-                                            "${getTodoList[index].todo}",
-                                            style: TextStyle(
-                                                fontSize: SizeConfig.width(
-                                                    context, 0.04)),
-                                            overflow: TextOverflow.ellipsis,
-                                            maxLines: 3,
+                                        InkWell(
+                                          onTap: () {
+                                            deleteTaskCubit.deleteTask();
+                                            print("Task deleted successfully");
+                                          },
+                                          child: BlocConsumer<DeleteTaskCubit,
+                                              DeleteTaskState>(
+                                            listener: (context, state) {
+                                              if (state is DeleteTaskFailed) {
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(SnackBar(
+                                                  content:
+                                                  Text(state.errorMessage),
+                                                ));
+                                              }
+                                              if (state is DeleteTaskSuccess) {
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(
+                                                    const SnackBar(
+                                                      content: Text(
+                                                          "Task deleted successfully"),
+                                                    ));
+                                              }
+                                            },
+                                            builder: (context, state) {
+                                              if (state is DeleteTaskLoading) {
+                                                return const Center(
+                                                  child:
+                                                  CircularProgressIndicator(),
+                                                );
+                                              }
+                                              return Icon(
+                                                Icons.delete,
+                                                color:
+                                                    GlobalColors.primaryColor,
+                                                size: SizeConfig.width(
+                                                    context, 0.07),
+                                              );
+                                            },
                                           ),
-                                        )
+                                        ),
                                       ],
                                     ));
                               },
                               separatorBuilder: (context, index) {
                                 return SizedBox(
-                                    height: 10.0); // Adjust as needed
+                                  height: SizeConfig.height(context, 0.02),
+                                ); // Adjust as needed
                               },
                               itemCount: state.getTodoList.length,
                             ),
@@ -144,7 +253,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       },
                     ),
                     SizedBox(
-                      height: SizeConfig.height(context, 0.2),
+                      height: SizeConfig.height(context, 0.5),
                     )
                   ],
                 ),
@@ -163,7 +272,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   boxShadow: [
-                    BoxShadow(
+                    const BoxShadow(
                       color: Colors.grey,
                       offset: Offset(0.0, 0.0),
                       blurRadius: 10.0,
@@ -197,14 +306,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       ));
                     }
                     if (state is AddTaskSuccess) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                         content: Text("Task Added successfully"),
                       ));
                     }
                   },
                   builder: (context, state) {
                     if (state is AddTaskLoading) {
-                      return Center(
+                      return const Center(
                         child: CircularProgressIndicator(),
                       );
                     }
@@ -277,7 +386,7 @@ class _HomeScreenState extends State<HomeScreen> {
             color: GlobalColors.tdBlack,
             size: SizeConfig.width(context, 0.1),
           ),
-          Container(
+          SizedBox(
             height: SizeConfig.height(context, 0.1),
             width: SizeConfig.width(context, 0.1),
             child: ClipRRect(
@@ -300,7 +409,7 @@ class _HomeScreenState extends State<HomeScreen> {
         hintText: 'Search',
         keyboardType: TextInputType.text,
         onChanged: (value) => _runFilter(value ?? ""),
-        prefixIcon: Icon(
+        prefixIcon: const Icon(
           Icons.search,
           color: GlobalColors.tdBlack,
           size: 20,
